@@ -10,7 +10,7 @@ const shopify = shopifyApi({
   scopes: ["read_products"],
   hostName: process.env.HOST_NAME,
 });
-
+console.log(shopify, "shopify");
 const storefrontAccessToken = process.env.STOREFRONT_ACCESS_TOKEN;
 const shop = process.env.STORE_URL;
 
@@ -36,10 +36,34 @@ app.get("/", async (req, res) => {
                 node {
                     id
                     title
-                            variants(first: 10) {
+                            images(first: 10) {
+          edges {
+            node {
+              src
+              originalSrc
+            }
+          }
+        }
+                  options(first: 10) {
+          id
+          name
+          values
+        }
+                    variants(first: 10) {
                                 edges {
                                    node {
                                          id
+                                         title
+                                                       availableForSale
+              currentlyNotInStock
+                            selectedOptions {
+                name
+                value
+              }
+
+                                                       price {
+                amount
+              }
                                         }
                                        }
                                                 }
@@ -94,6 +118,253 @@ app.post("/create-customer-token", async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+
+// API endpoint to delete address
+app.post("/delete-customer-address", async (req, res) => {
+  const { customerAccessToken, id } = req.body;
+
+  const query = `
+    mutation customerAddressDelete($customerAccessToken: String!, $id: ID!) {
+      customerAddressDelete(customerAccessToken: $customerAccessToken, id: $id) {
+        customerUserErrors {
+          field
+          message
+        }
+        deletedCustomerAddressId
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    customerAccessToken,
+    id,
+  };
+
+  try {
+    const response = await storefrontClient.query({
+      data: {
+        query,
+        variables,
+      },
+    });
+
+    const { customerAddressDelete } = response.body.data;
+    const { customerUserErrors, userErrors, deletedCustomerAddressId } = customerAddressDelete;
+
+    if (customerUserErrors.length > 0 || userErrors.length > 0) {
+      const errors = [...customerUserErrors, ...userErrors].map(error => error.message).join(", ");
+      throw new Error(errors);
+    }
+
+    res.send({ deletedCustomerAddressId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+//customer details
+app.post("/customer-details", async (req, res) => {
+  const { customerAccessToken } = req.body;
+
+  const query = `
+    query customerDetails($customerAccessToken: String!) {
+      customer(customerAccessToken: $customerAccessToken) {
+        addresses(first: 10) {
+          edges {
+            node {
+              id
+              firstName
+              lastName
+              name
+              phone
+              province
+              zip
+              country
+              city
+              address2
+              address1
+            }
+          }
+        }
+        displayName
+        email
+        firstName
+        lastName
+        phone
+        defaultAddress {
+          address1
+          address2
+          city
+          country
+          firstName
+          id
+          lastName
+          name
+          province
+          phone
+          zip
+        }
+        orders(first: 10) {
+          edges {
+            node {
+              statusUrl
+              totalPrice {
+                amount
+              }
+              lineItems(first: 10) {
+                edges {
+                  node {
+                    title
+                    variant {
+                      image {
+                        originalSrc
+                        src
+                      }
+                      price {
+                        amount
+                      }
+                      product {
+                        title
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    customerAccessToken,
+  };
+
+  try {
+    const response = await storefrontClient.query({
+      data: {
+        query,
+        variables,
+      },
+    });
+
+    const { customer } = response.body.data;
+
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+
+    res.send(customer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+//add customer address
+
+app.post("/add-customer-address", async (req, res) => {
+  const { address, customerAccessToken } = req.body;
+
+  const query = `
+    mutation customerAddressCreate($address: MailingAddressInput!, $customerAccessToken: String!) {
+      customerAddressCreate(address: $address, customerAccessToken: $customerAccessToken) {
+        customerAddress {
+          id
+          address1
+          address2
+          city
+          company
+          country
+          firstName
+          lastName
+          phone
+          province
+          zip
+        }
+        customerUserErrors {
+          field
+          message
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    address,
+    customerAccessToken,
+  };
+
+  try {
+    const response = await storefrontClient.query({
+      data: {
+        query,
+        variables,
+      },
+    });
+
+    const { customerAddressCreate } = response.body.data;
+    const { customerAddress, customerUserErrors, userErrors } = customerAddressCreate;
+
+    if (customerUserErrors.length > 0 || userErrors.length > 0) {
+      const errors = [...customerUserErrors, ...userErrors].map(error => error.message).join(", ");
+      throw new Error(errors);
+    }
+
+    res.send({ customerAddress });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+
+//forgot password
+
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  const query = `
+    mutation {
+      customerRecover(email: "${email}") {
+        customerUserErrors {
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await storefrontClient.query({ data: query });
+    console.log(response.body, "bodydouble");
+
+    const { customerRecover } = response.body.data;
+    const { customerUserErrors } = customerRecover;
+
+    if (customerUserErrors.length > 0) {
+      throw new Error(
+        customerUserErrors.map((error) => error.message).join(", ")
+      );
+    }
+
+    res.send({ message: "Recovery email sent successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+  }
+});
+
 
 // customer details
 
@@ -177,6 +448,23 @@ app.post("/create-customer", async (req, res) => {
 });
 // create cart
 
+
+// buyerIdentity: {
+//   email: "${email}",
+//   countryCode: ${country},
+//   deliveryAddressPreferences: {
+//     oneTimeUse: false,
+//     deliveryAddress: {
+//       address1: "${address1}",
+//       address2: "${address2}",
+//       city: "${city}",
+//       province: "${province}",
+//       country: "${country}",
+//       zip: "${zip}"
+//     }
+//   },
+// },
+
 app.post("/create-cart", async (req, res) => {
   const {
     email,
@@ -193,44 +481,23 @@ app.post("/create-cart", async (req, res) => {
     cartAttributeValue,
   } = req.body;
 
+
+
   const query = `
     mutation {
       cartCreate(
         input: {
           lines: [
-            {
-              quantity: ${quantity}
-              merchandiseId: "${merchandiseId}"
-            }
-          ],
-          buyerIdentity: {
-            email: "${email}",
-            countryCode: ${country},
-            deliveryAddressPreferences: {
-              oneTimeUse: false,
-              deliveryAddress: {
-                address1: "${address1}",
-                address2: "${address2}",
-                city: "${city}",
-                province: "${province}",
-                country: "${country}",
-                zip: "${zip}"
-              }
-            },
-            preferences: {
-              delivery: {
-                deliveryMethod: ${deliveryMethod}
-              }
-            }
-          },
-          attributes: {
-            key: "${cartAttributeKey}",
-            value: "${cartAttributeValue}"
+          { 
+          quantity: 1
+          merchandiseId: "gid://shopify/ProductVariant/39927659364523"
           }
+          ],
         }
       ) {
         cart {
           id
+          checkoutUrl
           createdAt
           updatedAt
           lines(first: 10) {
@@ -295,6 +562,123 @@ app.post("/create-cart", async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+// update buyers identity
+
+app.post("/update-buyer-identity", async (req, res) => {
+  const {
+    email,
+    country,
+    address1,
+    address2,
+    city,
+    province,
+    zip,
+    cartId,
+    phone
+  } = req.body;
+
+  const query = `
+    mutation cartBuyerIdentityUpdate($buyerIdentity: CartBuyerIdentityInput!, $cartId: ID!) {
+      cartBuyerIdentityUpdate(buyerIdentity: $buyerIdentity, cartId: $cartId) {
+        cart {
+          id
+          checkoutUrl
+          totalQuantity
+          attributes {
+            key
+            value
+          }
+          buyerIdentity {
+            email
+            phone
+            countryCode
+            deliveryAddressPreferences {
+              customerAddressId
+              deliveryAddress {
+                address1
+                address2
+                city
+                country
+                firstName
+                lastName
+                phone
+                province
+                zip
+              }
+            }
+          }
+          lines(first: 10) {
+            edges {
+              node {
+                id
+                quantity
+                merchandise {
+                  ... on ProductVariant {
+                    id
+                    title
+                    product {
+                      title
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    buyerIdentity: {
+      email: email,
+      phone:phone,
+      countryCode: country,
+      deliveryAddressPreferences: [
+        {
+          deliveryAddress: {
+            address1: address1,
+            address2: address2,
+            city: city,
+            province: province,
+            country: country,
+            zip: zip
+          }
+        }
+      ],
+    },
+    cartId: cartId,
+  };
+
+  try {
+    const response = await storefrontClient.query({
+      data: {
+        query,
+        variables,
+      },
+    });
+
+    const { cartBuyerIdentityUpdate } = response.body.data;
+    const { cart, userErrors } = cartBuyerIdentityUpdate;
+
+    if (userErrors.length > 0) {
+      const errors = userErrors.map((error) => error.message).join(", ");
+      throw new Error(errors);
+    }
+
+    res.send({ cart });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+  }
+});
+
+
 
 // request to update the cart
 
@@ -366,13 +750,15 @@ app.post("/update-cart-line", async (req, res) => {
 app.post("/add-cart-line", async (req, res) => {
   const { cartId, lines } = req.body;
 
-  const linesInput = lines.map(line => {
- //   const attributes = line.attributes.map(attr => `{ key: "${attr.key}", value: "${attr.value}" }`).join(', ');
-    return `{
+  const linesInput = lines
+    .map((line) => {
+      //   const attributes = line.attributes.map(attr => `{ key: "${attr.key}", value: "${attr.value}" }`).join(', ');
+      return `{
       merchandiseId: "${line.merchandiseId}",
       quantity: ${line.quantity},
     }`;
-  }).join(', ');
+    })
+    .join(", ");
 
   const query = `
     mutation {
@@ -451,14 +837,15 @@ app.get("/product", async (req, res) => {
   });
   res.send(products);
 });
- 
+
 // remove cart line
 
 app.post("/remove-cart-line", async (req, res) => {
   const { cartId, lineIds } = req.body;
+  console.log(cartId, "cartId");
 
-  const lineIdsInput = lineIds.map(id => `"${id}"`).join(', ');
-
+  const lineIdsInput = lineIds?.map((id) => `"${id}"`).join(", ");
+  console.log(lineIdsInput, "lineidInput");
   const query = `
     mutation {
       cartLinesRemove(cartId: "${cartId}", lineIds: [${lineIdsInput}]) {
@@ -522,7 +909,6 @@ app.post("/remove-cart-line", async (req, res) => {
   }
 });
 
-
 // request of all categories
 
 app.get("/collection", async (req, res) => {
@@ -561,6 +947,31 @@ app.get("/retrieve-cart", async (req, res) => {
               merchandise {
                 ... on ProductVariant {
                   id
+                title
+                image {
+                  originalSrc
+                  src
+                }
+                selectedOptions {
+                  name
+                  value
+                }
+                                    price {
+                    amount
+                    currencyCode
+                  }
+
+                  product {
+                    id
+                    title
+                    images(first: 1) {
+                      edges {
+                        node {
+                          src
+                        }
+                      }
+                    }
+                  }
                 }
               }
               attributes {
@@ -631,7 +1042,6 @@ app.get("/retrieve-cart", async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
-
 
 // request to single category
 
@@ -837,5 +1247,31 @@ app.get("/square-logo", async (req, res) => {
     });
   }
 });
+
+app.get("/product-types", async (req, res) => {
+  try {
+    const productTypesInfo = await storefrontClient.query({
+      data: {
+        query: `
+                {
+                  productTypes(first: 10) {
+                    edges {
+                      node
+                    }
+                  }
+                }
+          `,
+      },
+    });
+
+    res.send(productTypesInfo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      error: "An error occurred while fetching the product types.",
+    });
+  }
+});
+
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
