@@ -330,6 +330,82 @@ app.post("/add-customer-address", async (req, res) => {
 });
 
 
+
+
+//menu
+app.get("/menu", async (req, res) => {
+  try {
+    const menuInfo = await storefrontClient.query({
+      data: {
+        query: `
+                {
+                  menu(handle: "main-menu") {
+                    title
+                    items {
+                      resource {
+                        ... on Collection {
+                          id
+                          title
+                          products(first: 10) {
+                            edges {
+                              node {
+                                images(first: 10) {
+                                  edges {
+                                    node {
+                                      originalSrc
+                                      src
+                                    }
+                                  }
+                                }
+                                availableForSale
+                                options(first: 10) {
+                                  optionValues {
+                                    id
+                                    name
+                                  }
+                                  name
+                                  values
+                                }
+                                title
+                variants(first: 10) {
+                  edges {
+                    node {
+                      id
+                      title
+                      availableForSale
+                      currentlyNotInStock
+                      selectedOptions {
+                        name
+                        value
+                      }
+                      price {
+                        amount
+                      }
+                    }
+                  }
+                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+          `,
+      },
+    });
+
+    res.send(menuInfo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      error: "An error occurred while fetching the menu information.",
+    });
+  }
+});
+
+
 //forgot password
 
 app.post("/forgot-password", async (req, res) => {
@@ -746,9 +822,72 @@ app.post("/update-cart-line", async (req, res) => {
   }
 });
 
+//search 
+
+app.get("/search", async (req, res) => {
+  // Extract the search term from query parameters
+  const searchTerm = req.query.query; // Default to "hurst" if not provided
+
+  try {
+    const data = await storefrontClient.query({
+      data: `query MyQuery {
+        search(query: "${searchTerm}", first: 10) {
+          edges {
+            node {
+              ... on Product {
+                id
+                title
+                images(first: 10) {
+                  edges {
+                    node {
+                      originalSrc
+                      src
+                    }
+                  }
+                }
+                options(first: 10) {
+                  id
+                  name
+                  values
+                }
+                variants(first: 10) {
+                  edges {
+                    node {
+                      availableForSale
+                      id
+                      title
+                      currentlyNotInStock
+                      selectedOptions {
+                        name
+                        value
+                      }
+                      price {
+                        amount
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`,
+    });
+
+    console.log(data,'data');
+
+    res.send(data);
+  } catch (error) {
+    console.error("Error fetching search results:", error);
+    res.status(500).send({ error: "Failed to fetch search results" });
+  }
+});
+
 // add cart line
 app.post("/add-cart-line", async (req, res) => {
   const { cartId, lines } = req.body;
+
+  console.log(req.body);
 
   const linesInput = lines
     .map((line) => {
