@@ -119,7 +119,6 @@ app.post("/create-customer-token", async (req, res) => {
   }
 });
 
-
 // API endpoint to delete address
 app.post("/delete-customer-address", async (req, res) => {
   const { customerAccessToken, id } = req.body;
@@ -154,10 +153,13 @@ app.post("/delete-customer-address", async (req, res) => {
     });
 
     const { customerAddressDelete } = response.body.data;
-    const { customerUserErrors, userErrors, deletedCustomerAddressId } = customerAddressDelete;
+    const { customerUserErrors, userErrors, deletedCustomerAddressId } =
+      customerAddressDelete;
 
     if (customerUserErrors.length > 0 || userErrors.length > 0) {
-      const errors = [...customerUserErrors, ...userErrors].map(error => error.message).join(", ");
+      const errors = [...customerUserErrors, ...userErrors]
+        .map((error) => error.message)
+        .join(", ");
       throw new Error(errors);
     }
 
@@ -315,10 +317,13 @@ app.post("/add-customer-address", async (req, res) => {
     });
 
     const { customerAddressCreate } = response.body.data;
-    const { customerAddress, customerUserErrors, userErrors } = customerAddressCreate;
+    const { customerAddress, customerUserErrors, userErrors } =
+      customerAddressCreate;
 
     if (customerUserErrors.length > 0 || userErrors.length > 0) {
-      const errors = [...customerUserErrors, ...userErrors].map(error => error.message).join(", ");
+      const errors = [...customerUserErrors, ...userErrors]
+        .map((error) => error.message)
+        .join(", ");
       throw new Error(errors);
     }
 
@@ -329,70 +334,98 @@ app.post("/add-customer-address", async (req, res) => {
   }
 });
 
-
-
-
 //menu
+// app.get("/menu", async (req, res) => {
+//   try {
+//     const menuInfo = await storefrontClient.query({
+//       data: {
+//         query: `
+//                 {
+//                   menu(handle: "main-menu") {
+//                     title
+
+//                     items {
+//                        title
+//                       resource {
+//                         ... on Collection {
+//                           id
+//                           title
+//                           products(first: 10) {
+//                             edges {
+//                               node {
+//                                 images(first: 10) {
+//                                   edges {
+//                                     node {
+//                                       originalSrc
+//                                       src
+//                                     }
+//                                   }
+//                                 }
+//                                 availableForSale
+//                                 options(first: 10) {
+//                                   optionValues {
+//                                     id
+//                                     name
+//                                   }
+//                                   name
+//                                   values
+//                                 }
+//                                 title
+//                             variants(first: 10) {
+//                               edges {
+//                                 node {
+//                                   id
+//                                   title
+//                                   availableForSale
+//                                   currentlyNotInStock
+//                                   selectedOptions {
+//                                     name
+//                                     value
+//                                   }
+//                                   price {
+//                                     amount
+//                                   }
+//                                 }
+//                               }
+//                             }
+//                               }
+//                             }
+//                           }
+//                         }
+//                       }
+//                     }
+//                   }
+//                 }
+//           `,
+//       },
+//     });
+
+//     res.send(menuInfo);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send({
+//       error: "An error occurred while fetching the menu information.",
+//     });
+//   }
+// });
+
 app.get("/menu", async (req, res) => {
   try {
     const menuInfo = await storefrontClient.query({
       data: {
         query: `
-                {
-                  menu(handle: "main-menu") {
-                    title
-                    items {
-                      resource {
-                        ... on Collection {
-                          id
-                          title
-                          products(first: 10) {
-                            edges {
-                              node {
-                                images(first: 10) {
-                                  edges {
-                                    node {
-                                      originalSrc
-                                      src
-                                    }
-                                  }
-                                }
-                                availableForSale
-                                options(first: 10) {
-                                  optionValues {
-                                    id
-                                    name
-                                  }
-                                  name
-                                  values
-                                }
-                                title
-                variants(first: 10) {
-                  edges {
-                    node {
-                      id
-                      title
-                      availableForSale
-                      currentlyNotInStock
-                      selectedOptions {
-                        name
-                        value
-                      }
-                      price {
-                        amount
-                      }
-                    }
-                  }
-                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-          `,
+          {
+            menu(handle: "main-menu") {
+              title
+    items {
+      title
+      items {
+        title
+      }
+    }
+            }
+          }
+        `,
       },
     });
 
@@ -404,7 +437,6 @@ app.get("/menu", async (req, res) => {
     });
   }
 });
-
 
 //forgot password
 
@@ -440,7 +472,6 @@ app.post("/forgot-password", async (req, res) => {
     res.status(500).send(error);
   }
 });
-
 
 // customer details
 
@@ -524,7 +555,6 @@ app.post("/create-customer", async (req, res) => {
 });
 // create cart
 
-
 // buyerIdentity: {
 //   email: "${email}",
 //   countryCode: ${country},
@@ -556,8 +586,6 @@ app.post("/create-cart", async (req, res) => {
     cartAttributeKey,
     cartAttributeValue,
   } = req.body;
-
-
 
   const query = `
     mutation {
@@ -651,7 +679,7 @@ app.post("/update-buyer-identity", async (req, res) => {
     province,
     zip,
     cartId,
-    phone
+    phone,
   } = req.body;
 
   const query = `
@@ -713,7 +741,7 @@ app.post("/update-buyer-identity", async (req, res) => {
   const variables = {
     buyerIdentity: {
       email: email,
-      phone:phone,
+      phone: phone,
       countryCode: country,
       deliveryAddressPreferences: [
         {
@@ -723,9 +751,9 @@ app.post("/update-buyer-identity", async (req, res) => {
             city: city,
             province: province,
             country: country,
-            zip: zip
-          }
-        }
+            zip: zip,
+          },
+        },
       ],
     },
     cartId: cartId,
@@ -753,8 +781,6 @@ app.post("/update-buyer-identity", async (req, res) => {
     res.status(500).send(error);
   }
 });
-
-
 
 // request to update the cart
 
@@ -822,7 +848,7 @@ app.post("/update-cart-line", async (req, res) => {
   }
 });
 
-//search 
+//search
 
 app.get("/search", async (req, res) => {
   // Extract the search term from query parameters
@@ -874,7 +900,7 @@ app.get("/search", async (req, res) => {
       }`,
     });
 
-    console.log(data,'data');
+    console.log(data, "data");
 
     res.send(data);
   } catch (error) {
@@ -977,6 +1003,9 @@ app.get("/product", async (req, res) => {
   res.send(products);
 });
 
+
+
+
 // remove cart line
 
 app.post("/remove-cart-line", async (req, res) => {
@@ -1056,6 +1085,7 @@ app.get("/collection", async (req, res) => {
               collections (first: 20) {
               edges {
                   node {
+                      handle
                       id
                       title
                   }
@@ -1066,6 +1096,41 @@ app.get("/collection", async (req, res) => {
 
   res.send(products);
 });
+
+
+app.get("/collections", async (req, res) => {
+  const { handle, after } = req.query;  // Assuming the collection handle is passed as a query parameter
+  console.log(after,'after')
+
+  try {
+    const products = await storefrontClient.query({
+      data: `
+        {
+          collection(handle: "${handle}") {
+            products(first: 10, after: ${after ? `"${after}"` : null}) {
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+              }
+              edges {
+                node {
+                  title
+                }
+              }
+            }
+          }
+        }
+      `,
+    });
+
+    res.send(products);
+  } catch (error) {
+    res.status(500).send({ error: "An error occurred while fetching the collection." });
+  }
+});
+
 
 // retrive the cart
 
@@ -1411,6 +1476,5 @@ app.get("/product-types", async (req, res) => {
     });
   }
 });
-
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
