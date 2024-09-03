@@ -417,12 +417,38 @@ app.get("/menu", async (req, res) => {
           {
             menu(handle: "main-menu") {
               title
-    items {
-      title
-      items {
-        title
-      }
-    }
+              items {
+                title
+                resource {
+                  ... on Product {
+                    id
+                  }
+                }
+                items {
+                  title
+                  resource {
+                    ... on Product {
+                      id
+                    }
+                  }
+                  items {
+                    title
+                    resource {
+                      ... on Product {
+                        id
+                      }
+                    }
+                    items {
+                      title
+                      resource {
+                        ... on Product {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         `,
@@ -437,6 +463,7 @@ app.get("/menu", async (req, res) => {
     });
   }
 });
+
 
 //forgot password
 
@@ -1114,12 +1141,45 @@ app.get("/collections", async (req, res) => {
                 startCursor
                 endCursor
               }
-              edges {
+            edges {
                 node {
-                  title
-                }
-              }
+                    id
+                    title
+                            images(first: 10) {
+          edges {
+            node {
+              src
+              originalSrc
             }
+          }
+        }
+                  options(first: 10) {
+          id
+          name
+          values
+        }
+                    variants(first: 10) {
+                                edges {
+                                   node {
+                                         id
+                                         title
+                                                       availableForSale
+              currentlyNotInStock
+                            selectedOptions {
+                name
+                value
+              }
+
+                                                       price {
+                amount
+              }
+                                        }
+                                       }
+                                                }
+                      }
+                   }
+            }
+            
           }
         }
       `,
