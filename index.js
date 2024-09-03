@@ -5,14 +5,14 @@ const { shopifyApi, LATEST_API_VERSION } = require("@shopify/shopify-api");
 const fetch = require("node-fetch");
 
 const shopify = shopifyApi({
-  apiKey: process.env.CLIENT_ID,
-  apiSecretKey: process.env.CLIENT_KEY,
+  apiKey: "43cd71747f554710ab77585ccc604440",
+  apiSecretKey: "acc97cc7f3f6114d2f3bdb4c59e042f3",
   scopes: ["read_products"],
-  hostName: process.env.HOST_NAME,
+  hostName: "localhost:3000",
 });
 console.log(shopify, "shopify");
-const storefrontAccessToken = process.env.STOREFRONT_ACCESS_TOKEN;
-const shop = process.env.STORE_URL;
+const storefrontAccessToken = "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";
+const shop = "the-gadgets-mink.myshopify.com";
 
 const storefrontClient = new shopify.clients.Storefront({
   session: {
