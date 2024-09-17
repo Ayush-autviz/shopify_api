@@ -1187,7 +1187,7 @@ app.get("/collections", async (req, res) => {
 
     res.send(products);
   } catch (error) {
-    res.status(500).send({ error: "An error occurred while fetching the collection." });
+    res.status(500).send(error);
   }
 });
 
