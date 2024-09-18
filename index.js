@@ -3,6 +3,9 @@ require("dotenv").config();
 require("@shopify/shopify-api/adapters/node");
 const { shopifyApi, LATEST_API_VERSION } = require("@shopify/shopify-api");
 const fetch = require("node-fetch");
+const  cors = require('cors')
+
+
 
 const shopify = shopifyApi({
   apiKey: "43cd71747f554710ab77585ccc604440",
@@ -24,6 +27,7 @@ const storefrontClient = new shopify.clients.Storefront({
 const app = express();
 
 app.use(express.json());
+app.use(cors())
 const port = 3000;
 
 //request to get all the products
@@ -1196,6 +1200,7 @@ app.get("/collections", async (req, res) => {
 
 app.get("/retrieve-cart", async (req, res) => {
   const { cartId } = req.query;
+  console.log(cartId,'cartid')
 
   const query = `
     query {
