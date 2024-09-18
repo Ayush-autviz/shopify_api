@@ -579,7 +579,7 @@ app.post("/create-customer", async (req, res) => {
 
     res.send({ customer });
   } catch (error) {
-    console.error(error);
+    console.log(error);
 
     res.status(500).send(error);
   }
@@ -1200,6 +1200,123 @@ app.get("/collections", async (req, res) => {
 
 app.get("/retrieve-cart", async (req, res) => {
   const { cartId } = req.query;
+  console.log(cartId,'cartid')
+
+  const query = `
+    query {
+      cart(id: "${cartId}") {
+        id
+        createdAt
+        updatedAt
+        lines(first: 10) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                title
+                image {
+                  originalSrc
+                  src
+                }
+                selectedOptions {
+                  name
+                  value
+                }
+                                    price {
+                    amount
+                    currencyCode
+                  }
+
+                  product {
+                    id
+                    title
+                    images(first: 1) {
+                      edges {
+                        node {
+                          src
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              attributes {
+                key
+                value
+              }
+            }
+          }
+        }
+        attributes {
+          key
+          value
+        }
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+          totalDutyAmount {
+            amount
+            currencyCode
+          }
+        }
+        buyerIdentity {
+          email
+          phone
+          customer {
+            id
+          }
+          countryCode
+          deliveryAddressPreferences {
+            ... on MailingAddress {
+              address1
+              address2
+              city
+              provinceCode
+              countryCodeV2
+              zip
+            }
+          }
+          preferences {
+            delivery {
+              deliveryMethod
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await storefrontClient.query({ data: query });
+
+    const { cart } = response.body.data;
+
+    res.send({ cart });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({ error: error.message });
+  }
+});
+
+
+// retrive the cart
+
+app.post("/retrieve-cart", async (req, res) => {
+  const { cartId } = req.body;
   console.log(cartId,'cartid')
 
   const query = `
